@@ -12,50 +12,49 @@ export default function PricingSuccessPage() {
   const pollInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let attempts = 0;
-    const maxAttempts = 20; // max 30 seconds at 1.5s interval
+    let mounted = true;
 
-    const checkSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setStatus('error');
-        clearInterval(pollInterval.current!);
+    const verifySession = async () => {
+      // Small delay on mount to let user see "Verifying" message
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+
+      if (!sessionId) {
+        if (mounted) setStatus('error');
         return;
       }
 
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', user.id)
-        .single();
-
-      if (sub?.status === 'active') {
-        setStatus('success');
-        if (pollInterval.current) clearInterval(pollInterval.current);
-        
-        // Short delay for UX before redirect
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
-      } else {
-        attempts++;
-        if (attempts >= maxAttempts) {
-          setStatus('error');
-          if (pollInterval.current) clearInterval(pollInterval.current);
+      try {
+        const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'active' || data.verified) {
+            if (mounted) {
+              setStatus('success');
+              setTimeout(() => {
+                router.push('/dashboard');
+              }, 1200);
+            }
+          } else {
+            if (mounted) setStatus('error');
+          }
+        } else {
+          if (mounted) setStatus('error');
         }
+      } catch (err) {
+        console.error('Verification failed', err);
+        if (mounted) setStatus('error');
       }
     };
 
-    // Initial check
-    checkSubscription();
-
-    // Setup polling
-    pollInterval.current = setInterval(checkSubscription, 1500);
+    verifySession();
 
     return () => {
-      if (pollInterval.current) clearInterval(pollInterval.current);
+      mounted = false;
     };
-  }, [supabase, router]);
+  }, [router]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-6">
@@ -86,18 +85,18 @@ export default function PricingSuccessPage() {
 
         {status === 'error' && (
           <div className="flex flex-col items-center animate-fade-in">
-            <div className="w-16 h-16 bg-error-container/20 rounded-full flex items-center justify-center mb-6">
-              <div className="text-error text-2xl font-bold">!</div>
+            <div className="w-16 h-16 bg-primary-container/20 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-display-sm text-on-surface mb-3">Verification Timeout</h1>
+            <h1 className="text-display-sm text-on-surface mb-3">Almost There!</h1>
             <p className="text-body-md text-on-surface-variant mb-6">
-              We haven't received confirmation from Stripe yet. It might still be processing.
+              Your payment was successful but is still syncing with our database. You can safely head over to your dashboard.
             </p>
             <button 
               onClick={() => router.push('/dashboard')}
-              className="btn-primary-gradient px-6 py-3 rounded-md text-body-md font-medium"
+              className="px-6 py-3 bg-primary text-on-primary rounded-xl font-medium hover:opacity-90 transition-opacity"
             >
-              Continue to Dashboard
+              Go to Dashboard
             </button>
           </div>
         )}
