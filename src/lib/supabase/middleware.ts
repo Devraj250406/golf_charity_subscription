@@ -62,7 +62,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Pricing route logic for logged-in users
-  if (pathname === '/pricing' && user) {
+  if ((pathname === '/pricing' || pathname === '/pricing/success') && user) {
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('status')

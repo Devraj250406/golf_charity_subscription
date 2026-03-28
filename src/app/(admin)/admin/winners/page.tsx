@@ -57,6 +57,16 @@ export default function AdminWinnersPage() {
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-body-sm text-on-surface-variant">{getMatchTypeLabel(w.match_type as string)}</span>
                       <span className="text-body-sm text-on-surface-variant">{draw?.draw_date ? formatDate(draw.draw_date) : ''}</span>
+                      {typeof w.proof_url === 'string' && (
+                        <a 
+                          href={w.proof_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-body-sm text-primary hover:underline font-medium"
+                        >
+                          View Proof
+                        </a>
+                      )}
                     </div>
                     <p className="text-headline-sm text-primary font-semibold mt-2">{formatCurrency(Number(w.amount))}</p>
                   </div>
