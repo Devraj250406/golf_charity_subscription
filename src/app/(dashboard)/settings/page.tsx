@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Settings, User, CreditCard, LogOut } from 'lucide-react';
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState<{ full_name: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string; email: string; subStatus: string } | null>(null);
   const [fullName, setFullName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -18,10 +18,18 @@ export default function SettingsPage() {
   const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single();
-    if (data) {
-      setProfile(data);
-      setFullName(data.full_name || '');
+    
+    const [profileRes, subRes] = await Promise.all([
+      supabase.from('profiles').select('full_name, email').eq('id', user.id).single(),
+      supabase.from('subscriptions').select('status').eq('user_id', user.id).single(),
+    ]);
+
+    if (profileRes.data) {
+      setProfile({
+        ...profileRes.data,
+        subStatus: subRes.data?.status || 'inactive'
+      });
+      setFullName(profileRes.data.full_name || '');
     }
   }, [supabase]);
 
@@ -53,6 +61,8 @@ export default function SettingsPage() {
       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   );
+
+  const isActive = profile.subStatus === 'active';
 
   return (
     <div>
@@ -94,18 +104,32 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3 mb-4">
           <CreditCard className="w-5 h-5 text-primary" />
           <h2 className="text-headline-sm text-on-surface">Subscription</h2>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-500/10 text-green-500' : 'bg-surface-container-high text-on-surface-variant'}`}>
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
         </div>
         <p className="text-body-sm text-on-surface-variant mb-4">
-          Manage your subscription, update payment methods, or cancel through the Stripe customer portal.
+          {isActive 
+            ? 'Manage your subscription, update payment methods, or cancel through the Stripe customer portal.'
+            : 'You are currently not subscribed. An active subscription is required to access the platform.'}
         </p>
-        <button
-          onClick={handleManageSubscription}
-          disabled={portalPending}
-          className="px-6 py-2.5 rounded-md bg-surface-container-low ghost-border text-body-sm font-medium text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2 disabled:opacity-50"
-        >
-          {portalPending && <Loader2 className="w-4 h-4 animate-spin" />}
-          Manage Subscription
-        </button>
+        {isActive ? (
+          <button
+            onClick={handleManageSubscription}
+            disabled={portalPending}
+            className="px-6 py-2.5 rounded-md bg-surface-container-low ghost-border text-body-sm font-medium text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            {portalPending && <Loader2 className="w-4 h-4 animate-spin" />}
+            Manage Subscription
+          </button>
+        ) : (
+          <button
+            onClick={() => router.push('/dashboard/billing')}
+            className="btn-primary-gradient px-6 py-2.5 rounded-md text-body-sm font-medium flex items-center gap-2"
+          >
+            Upgrade Plan
+          </button>
+        )}
       </div>
 
       {/* Sign Out */}

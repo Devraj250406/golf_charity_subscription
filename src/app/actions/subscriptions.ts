@@ -38,13 +38,13 @@ export async function createCheckoutSession(planType: 'monthly' | 'yearly') {
 
     if (!priceId || priceId.includes('your_monthly_price_id') || priceId.includes('your_yearly_price_id')) {
       console.error('Stripe Price ID is invalid or missing. Evaluated:', priceId);
-      redirect('/pricing?error=invalid_price_id');
+      redirect('/dashboard/billing?error=invalid_price_id');
     }
 
     const stripe = getStripeClient();
     if (!stripe) {
       console.error('Stripe client initialization failed due to missing API keys.');
-      redirect('/pricing?error=stripe_configuration_missing');
+      redirect('/dashboard/billing?error=stripe_configuration_missing');
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -72,8 +72,8 @@ export async function createCheckoutSession(planType: 'monthly' | 'yearly') {
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/pricing`,
+      success_url: `${appUrl}/dashboard/billing?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/dashboard/billing`,
       metadata: {
         supabase_user_id: user.id,
         plan_type: planType,
@@ -86,7 +86,7 @@ export async function createCheckoutSession(planType: 'monthly' | 'yearly') {
       throw error;
     }
     console.error('Error creating checkout session:', error);
-    redirect('/pricing?error=checkout_failed');
+    redirect('/dashboard/billing?error=checkout_failed');
   }
 
   if (sessionUrl) {

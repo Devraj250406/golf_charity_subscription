@@ -2,14 +2,50 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { NAV_LINKS, APP_NAME } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [role, setRole] = useState<string>('user');
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (data?.role) setRole(data.role);
+      }
+    }
+    loadSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user || null);
+        if (session?.user) {
+          const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+          if (data?.role) setRole(data.role);
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
 
   return (
     <header className="sticky top-0 z-50 glass">
@@ -45,19 +81,38 @@ export function Navbar() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-body-sm text-on-surface-variant hover:text-on-surface transition-colors px-4 py-2"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className="btn-primary-gradient text-body-sm px-5 py-2.5 rounded-md font-medium flex items-center gap-1.5"
-            >
-              Get Started
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            {!user ? (
+              <>
+                <Link
+                  href="/login"
+                  className="text-body-sm text-on-surface-variant hover:text-on-surface transition-colors px-4 py-2"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="btn-primary-gradient text-body-sm px-5 py-2.5 rounded-md font-medium flex items-center gap-1.5"
+                >
+                  Get Started
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={role === 'admin' ? '/admin' : '/dashboard'}
+                  className="text-body-sm text-primary font-medium hover:text-primary/80 transition-colors px-4 py-2"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="btn-primary-gradient text-body-sm px-5 py-2.5 rounded-md font-medium flex items-center gap-1.5"
+                >
+                  Sign Out
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -90,20 +145,43 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="mt-4 pt-4 border-t border-outline-variant/15 flex flex-col gap-2">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="px-4 py-3 rounded-md text-body-md text-on-surface-variant text-center"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={() => setMobileOpen(false)}
-                  className="btn-primary-gradient text-body-md px-4 py-3 rounded-md font-medium text-center"
-                >
-                  Get Started
-                </Link>
+                {!user ? (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="px-4 py-3 rounded-md text-body-md text-on-surface-variant text-center"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/signup"
+                      onClick={() => setMobileOpen(false)}
+                      className="btn-primary-gradient text-body-md px-4 py-3 rounded-md font-medium text-center"
+                    >
+                      Get Started
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={role === 'admin' ? '/admin' : '/dashboard'}
+                      onClick={() => setMobileOpen(false)}
+                      className="px-4 py-3 rounded-md text-body-md text-primary font-medium text-center"
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={(e) => {
+                        setMobileOpen(false);
+                        handleSignOut(e);
+                      }}
+                      className="btn-primary-gradient text-body-md px-4 py-3 rounded-md font-medium text-center"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

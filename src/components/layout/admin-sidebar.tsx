@@ -11,7 +11,7 @@ import {
   Award,
   BarChart3,
   LogOut,
-  ArrowLeft,
+  ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_NAME } from '@/lib/constants';
@@ -38,72 +38,241 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="bg-inverse-surface h-screen sticky top-0 flex flex-col w-[260px]">
-      {/* Logo */}
-      <div className="p-4 flex items-center gap-3 h-16">
-        <div className="w-9 h-9 rounded-md bg-inverse-primary flex items-center justify-center text-sm font-bold text-inverse-surface shrink-0">
-          P
-        </div>
-        <div className="flex flex-col">
-          <span className="text-body-md text-surface-container-lowest font-semibold tracking-tight truncate">
-            {APP_NAME}
-          </span>
-          <span className="text-label-sm text-surface-container-high uppercase tracking-widest">
-            Admin
-          </span>
-        </div>
-      </div>
+    <>
+      <style>{`
+        .admin-sidebar {
+          width: 240px;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+          display: flex;
+          flex-direction: column;
+          background: rgba(28, 28, 30, 0.96);
+          backdrop-filter: blur(24px) saturate(1.6);
+          -webkit-backdrop-filter: blur(24px) saturate(1.6);
+          border-right: 1px solid rgba(255,255,255,0.07);
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        }
 
-      {/* Back to User Dashboard */}
-      <div className="px-3 py-2">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-body-sm text-surface-container-high hover:bg-surface-container-highest/10 hover:text-surface-container-lowest transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 shrink-0" />
-          <span>Back to Dashboard</span>
+        /* Logo area */
+        .sidebar-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 20px 16px 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .logo-mark {
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          background: linear-gradient(145deg, #0a84ff, #0055d4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 15px;
+          font-weight: 700;
+          color: #fff;
+          letter-spacing: -0.5px;
+          flex-shrink: 0;
+          box-shadow: 0 2px 8px rgba(10,132,255,0.35);
+        }
+        .logo-text-app {
+          font-size: 14px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.92);
+          letter-spacing: -0.3px;
+          line-height: 1.2;
+        }
+        .logo-text-role {
+          font-size: 10px;
+          font-weight: 500;
+          color: rgba(255,255,255,0.32);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 1px;
+        }
+
+        /* Back link */
+        .back-link {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin: 10px 10px 4px;
+          padding: 6px 10px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255,255,255,0.35);
+          text-decoration: none;
+          transition: background 0.15s ease, color 0.15s ease;
+          letter-spacing: 0.01em;
+        }
+        .back-link:hover {
+          background: rgba(255,255,255,0.06);
+          color: rgba(255,255,255,0.65);
+        }
+        .back-link svg {
+          width: 13px;
+          height: 13px;
+          stroke-width: 2.2;
+        }
+
+        /* Section label */
+        .nav-section-label {
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.22);
+          padding: 10px 16px 6px;
+        }
+
+        /* Nav */
+        .sidebar-nav {
+          flex: 1;
+          padding: 4px 8px;
+          overflow-y: auto;
+          scrollbar-width: none;
+        }
+        .sidebar-nav::-webkit-scrollbar { display: none; }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 10px;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 450;
+          color: rgba(255,255,255,0.50);
+          text-decoration: none;
+          margin-bottom: 1px;
+          transition: background 0.15s ease, color 0.15s ease;
+          letter-spacing: -0.01em;
+          position: relative;
+        }
+        .nav-item svg {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          stroke-width: 1.75;
+          transition: color 0.15s ease;
+        }
+        .nav-item:hover {
+          background: rgba(255,255,255,0.06);
+          color: rgba(255,255,255,0.80);
+        }
+        .nav-item.active {
+          background: rgba(10,132,255,0.15);
+          color: #0a84ff;
+          font-weight: 550;
+        }
+        .nav-item.active svg {
+          color: #0a84ff;
+        }
+        /* Active left-edge pill */
+        .nav-item.active::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 3px;
+          height: 16px;
+          border-radius: 0 2px 2px 0;
+          background: #0a84ff;
+        }
+
+        /* Divider */
+        .sidebar-divider {
+          height: 1px;
+          margin: 4px 12px;
+          background: rgba(255,255,255,0.06);
+        }
+
+        /* Bottom */
+        .sidebar-bottom {
+          padding: 8px 8px 16px;
+        }
+        .signout-btn {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 8px 10px;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 450;
+          color: rgba(255,255,255,0.35);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          letter-spacing: -0.01em;
+          transition: background 0.15s ease, color 0.15s ease;
+          font-family: inherit;
+        }
+        .signout-btn svg {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          stroke-width: 1.75;
+        }
+        .signout-btn:hover {
+          background: rgba(255,59,48,0.12);
+          color: #ff453a;
+        }
+      `}</style>
+
+      <aside className="admin-sidebar">
+
+        {/* Logo */}
+        <div className="sidebar-logo">
+          <div className="logo-mark">P</div>
+          <div>
+            <div className="logo-text-app">{APP_NAME}</div>
+            <div className="logo-text-role">Admin</div>
+          </div>
+        </div>
+
+        {/* Back link */}
+        <Link href="/dashboard" className="back-link">
+          <ChevronLeft />
+          Back to Dashboard
         </Link>
-      </div>
 
-      {/* Divider */}
-      <div className="mx-4 h-px bg-surface-container-highest/15 my-1" />
+        <div className="sidebar-divider" />
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
-        <ul className="space-y-1">
+        {/* Nav */}
+        <div className="nav-section-label">Management</div>
+        <nav className="sidebar-nav">
           {adminNavItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-md text-body-sm transition-all duration-200',
-                    isActive
-                      ? 'bg-inverse-primary/20 text-inverse-primary font-medium'
-                      : 'text-surface-container-high hover:bg-surface-container-highest/10 hover:text-surface-container-lowest'
-                  )}
-                >
-                  <Icon className={cn('w-5 h-5 shrink-0', isActive && 'text-inverse-primary')} />
-                  <span>{item.label}</span>
-                </Link>
-              </li>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn('nav-item', isActive && 'active')}
+              >
+                <Icon />
+                {item.label}
+              </Link>
             );
           })}
-        </ul>
-      </nav>
+        </nav>
 
-      {/* Bottom */}
-      <div className="px-3 py-4">
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-md text-body-sm text-surface-container-high hover:bg-error-container/20 hover:text-error transition-colors w-full"
-        >
-          <LogOut className="w-5 h-5 shrink-0" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </aside>
+        {/* Sign out */}
+        <div className="sidebar-divider" />
+        <div className="sidebar-bottom">
+          <button className="signout-btn" onClick={handleSignOut}>
+            <LogOut />
+            Sign Out
+          </button>
+        </div>
+
+      </aside>
+    </>
   );
 }

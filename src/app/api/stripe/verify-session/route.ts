@@ -28,19 +28,40 @@ export async function GET(request: NextRequest) {
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      // Update the user's subscription in Supabase instantly
-      const { error } = await supabaseAdmin
+      // Check if subscription exists
+      const { data: existingSub } = await supabaseAdmin
         .from('subscriptions')
-        .update({
-          status: 'active',
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          plan_type: planType,
-        })
-        .eq('user_id', userId);
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+        .single();
+        
+      let error;
+      if (existingSub) {
+        ({ error } = await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            status: 'active',
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            plan_type: planType,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSub.id));
+      } else {
+        ({ error } = await supabaseAdmin
+          .from('subscriptions')
+          .insert({
+            user_id: userId,
+            status: 'active',
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            plan_type: planType,
+          }));
+      }
 
       if (error) {
-        console.error('Failed to immediately update subscription status:', error);
+        console.error('Failed to immediately update/insert subscription status:', error);
       } else {
         console.log(`Successfully verified and activated subscription for user: ${userId}`);
       }

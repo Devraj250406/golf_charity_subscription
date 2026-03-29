@@ -44,7 +44,7 @@ export function SignupForm() {
         return;
       }
 
-      router.push('/pricing');
+      router.push('/dashboard/billing');
       router.refresh();
     } catch {
       setError('An unexpected error occurred');

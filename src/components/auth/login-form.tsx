@@ -22,17 +22,31 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) {
-        setError(authError.message);
+      if (authError || !user) {
+        setError(authError?.message || 'Login failed');
         return;
       }
 
-      router.push('/dashboard');
+      // Check role and subscription for correct initial redirect
+      const [profileRes, subRes] = await Promise.all([
+        supabase.from('profiles').select('role').eq('id', user.id).single(),
+        supabase.from('subscriptions').select('status').eq('user_id', user.id).single()
+      ]);
+
+      const role = profileRes.data?.role || 'user';
+      const status = subRes.data?.status || 'inactive';
+
+      if (role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push(status === 'active' ? '/dashboard' : '/dashboard/billing');
+      }
+      
       router.refresh();
     } catch {
       setError('An unexpected error occurred');
